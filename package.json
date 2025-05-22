@@ -1,0 +1,22 @@
+{
+  "name": "alpha-point",
+  "version": "1.0.0",
+  "description": "BSC交易零滑点工具的前端实现",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -o",
+    "dev": "npx http-server -o -c-1"
+  },
+  "keywords": [
+    "blockchain",
+    "BSC",
+    "trading",
+    "zero-slippage",
+    "frontend"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Point - BSC交易零滑点工具</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="Alpha Point - 追踪BSC交易，实现零滑点交易的工具">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Alpha Point</h1>
+                <p>追踪BSC交易，实现零滑点交易</p>
+            </div>
+            <div class="info">
+                <p>使用此工具交易时必须取消勾选MEV保护，滑点可以调低到0.1，目前仅支持PancakeSwap的交易</p>
+            </div>
+        </header>
+
+        <main>
+            <section class="stats-panel">
+                <div class="stat-item">
+                    <h3>Pair</h3>
+                    <p>-</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Fee</h3>
+                    <p>0.01%</p>
+                </div>
+                <div class="stat-item">
+                    <h3>TVL</h3>
+                    <p>$2.87M</p>
+                </div>
+            </section>
+
+            <section class="token-auth">
+                <h2>代币授权状态</h2>
+                <div class="token-status">
+                    <div class="token">
+                        <span class="token-name">代币状态</span>
+                        <span class="token-status-value">操作</span>
+                    </div>
+                    <div class="token">
+                        <span class="token-name">B2</span>
+                        <span class="token-status-value">未授权</span>
+                        <button class="auth-btn">授权</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="address-status">
+                <h2>有效期状态</h2>
+                <div class="address-list">
+                    <div class="address">
+                        <span class="address-name">地址</span>
+                        <span class="address-status-value">有效期状态</span>
+                    </div>
+                    <div class="address">
+                        <span class="address-name">0x1234...5678</span>
+                        <span class="address-status-value">已过期</span>
+                        <button class="renew-btn">续期</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="trade-stats">
+                <h2>今日交易统计</h2>
+                <div class="loading">
+                    <span>加载中...</span>
+                </div>
+            </section>
+
+            <section class="trade-records">
+                <h2>今日交易记录</h2>
+                <table class="trade-table">
+                    <thead>
+                        <tr>
+                            <th>交易哈希</th>
+                            <th>费用</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 交易记录将通过JavaScript动态添加 -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Alpha Point. 保留所有权利。</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
