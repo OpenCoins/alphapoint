@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         loadTradeData();
         simulateLoading();
+        initTrader();
     }
 
     // 设置事件监听器
@@ -30,18 +31,34 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', handleRenew);
         });
 
-        // 添加连接钱包按钮（如果需要）
-        addWalletConnectButton();
+        // 连接钱包按钮点击事件
+        const connectButton = document.querySelector('.connect-wallet-btn');
+        if (connectButton) {
+            connectButton.addEventListener('click', connectWallet);
+        }
+
+        // 代币授权按钮点击事件
+        const approveTokenButton = document.getElementById('approve-token-btn');
+        if (approveTokenButton) {
+            approveTokenButton.addEventListener('click', approveToken);
+        }
+
+        // 执行批量交易按钮点击事件
+        const executeBatchTradeButton = document.getElementById('execute-batch-trade-btn');
+        if (executeBatchTradeButton) {
+            executeBatchTradeButton.addEventListener('click', executeBatchTrade);
+        }
     }
 
-    // 添加连接钱包按钮
-    function addWalletConnectButton() {
-        const header = document.querySelector('header');
-        const connectButton = document.createElement('button');
-        connectButton.className = 'connect-wallet-btn';
-        connectButton.textContent = '连接钱包';
-        connectButton.addEventListener('click', connectWallet);
-        header.appendChild(connectButton);
+    // 初始化交易工具
+    async function initTrader() {
+        try {
+            await trader.init();
+            console.log('交易工具初始化成功');
+        } catch (error) {
+            console.error('交易工具初始化失败:', error);
+            showNotification('交易工具初始化失败，请刷新页面重试', 'error');
+        }
     }
 
     // 连接钱包功能
@@ -51,39 +68,22 @@ document.addEventListener('DOMContentLoaded', function() {
         button.disabled = true;
 
         try {
-            // 检查是否安装了MetaMask
-            if (typeof window.ethereum === 'undefined') {
-                throw new Error('请安装MetaMask钱包');
+            // 使用trader.js中的连接钱包功能
+            const account = await trader.connectWallet();
+            
+            if (account) {
+                const shortAddress = account.substr(0, 6) + '...' + account.substr(-4);
+                button.textContent = shortAddress;
+                button.disabled = false;
+
+                // 显示通知
+                showNotification('BSC钱包连接成功！', 'success');
+
+                // 更新UI状态
+                updateUIAfterConnect(account);
+            } else {
+                throw new Error('连接钱包失败');
             }
-
-            // 请求连接钱包
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            
-            // 检查当前网络是否为BSC
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-            
-            // BSC主网的chainId为0x38 (十进制56)
-            if (chainId !== '0x38') {
-                await switchToBSCNetwork();
-            }
-            
-            // 获取钱包地址并显示
-            const walletAddress = accounts[0];
-            const shortAddress = walletAddress.substr(0, 6) + '...' + walletAddress.substr(-4);
-            button.textContent = shortAddress;
-            button.disabled = false;
-
-            // 显示通知
-            showNotification('BSC钱包连接成功！', 'success');
-
-            // 更新UI状态
-            updateUIAfterConnect();
-            
-            // 监听账户变化
-            window.ethereum.on('accountsChanged', handleAccountsChanged);
-            // 监听链变化
-            window.ethereum.on('chainChanged', handleChainChanged);
-            
         } catch (error) {
             console.error('连接钱包失败:', error);
             button.textContent = '连接钱包';
@@ -91,81 +91,156 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('连接钱包失败: ' + error.message, 'error');
         }
     }
-    
-    // 切换到BSC网络
-    async function switchToBSCNetwork() {
+
+    // 授权代币功能
+    async function approveToken() {
+        const tokenAddress = document.getElementById('token-address').value;
+        const tokenAmount = document.getElementById('token-amount').value;
+        
+        if (!tokenAddress || !tokenAmount) {
+            showNotification('请输入代币地址和授权数量', 'error');
+            return;
+        }
+        
+        const button = document.getElementById('approve-token-btn');
+        button.textContent = '授权中...';
+        button.disabled = true;
+        
         try {
-            // 尝试切换到BSC网络
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x38' }], // BSC的chainId
-            });
-        } catch (switchError) {
-            // 如果网络不存在，则添加BSC网络
-            if (switchError.code === 4902) {
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [
-                            {
-                                chainId: '0x38',
-                                chainName: 'Binance Smart Chain',
-                                nativeCurrency: {
-                                    name: 'BNB',
-                                    symbol: 'BNB',
-                                    decimals: 18,
-                                },
-                                rpcUrls: ['https://bsc-dataseed.binance.org/'],
-                                blockExplorerUrls: ['https://bscscan.com/'],
-                            },
-                        ],
-                    });
-                } catch (addError) {
-                    throw new Error('无法添加BSC网络: ' + addError.message);
+            // 检查钱包是否已连接
+            if (!trader.isConnected) {
+                await connectWallet();
+                if (!trader.isConnected) {
+                    throw new Error('请先连接钱包');
                 }
-            } else {
-                throw new Error('无法切换到BSC网络: ' + switchError.message);
             }
+            
+            // 将输入的数量转换为Wei（假设代币有18位小数）
+            const amountInWei = ethers.utils.parseUnits(tokenAmount, 18).toString();
+            
+            // 调用trader.js中的授权代币功能
+            const tx = await trader.approveToken(tokenAddress, amountInWei);
+            
+            // 添加到代币列表
+            addTokenToList(tokenAddress, '已授权');
+            
+            // 清空输入框
+            document.getElementById('token-address').value = '';
+            document.getElementById('token-amount').value = '';
+            
+            showNotification('代币授权成功！', 'success');
+        } catch (error) {
+            console.error('授权代币失败:', error);
+            showNotification('授权代币失败: ' + error.message, 'error');
+        } finally {
+            button.textContent = '授权代币';
+            button.disabled = false;
         }
     }
     
-    // 处理账户变化
-    function handleAccountsChanged(accounts) {
-        if (accounts.length === 0) {
-            // 用户断开了钱包连接
-            const button = document.querySelector('.connect-wallet-btn');
-            button.textContent = '连接钱包';
-            showNotification('钱包已断开连接', 'info');
-        } else {
-            // 账户已更改
-            const walletAddress = accounts[0];
-            const shortAddress = walletAddress.substr(0, 6) + '...' + walletAddress.substr(-4);
-            const button = document.querySelector('.connect-wallet-btn');
-            button.textContent = shortAddress;
-            showNotification('钱包账户已更改', 'info');
+    // 添加代币到列表
+    function addTokenToList(tokenAddress, status) {
+        const tokenList = document.querySelector('.token-status');
+        const shortAddress = tokenAddress.substr(0, 6) + '...' + tokenAddress.substr(-4);
+        
+        const tokenElement = document.createElement('div');
+        tokenElement.className = 'token';
+        tokenElement.innerHTML = `
+            <span class="token-name">${shortAddress}</span>
+            <span class="token-status-value" style="color: #238636;">${status}</span>
+        `;
+        
+        // 插入到列表的第二个位置（在标题行之后）
+        tokenList.insertBefore(tokenElement, tokenList.children[2]);
+    }
+    
+    // 执行批量交易
+    async function executeBatchTrade() {
+        const buyToken = document.getElementById('buy-token').value;
+        const buyAmount = document.getElementById('buy-amount').value;
+        const sellToken = document.getElementById('sell-token').value;
+        const sellAmount = document.getElementById('sell-amount').value;
+        const slippage = document.getElementById('slippage').value;
+        const deadlineMinutes = document.getElementById('deadline').value;
+        
+        if (!buyToken || !buyAmount || !sellToken || !sellAmount) {
+            showNotification('请填写完整的交易信息', 'error');
+            return;
+        }
+        
+        const button = document.getElementById('execute-batch-trade-btn');
+        button.textContent = '交易中...';
+        button.disabled = true;
+        
+        try {
+            // 检查钱包是否已连接
+            if (!trader.isConnected) {
+                await connectWallet();
+                if (!trader.isConnected) {
+                    throw new Error('请先连接钱包');
+                }
+            }
+            
+            // 计算截止时间（当前时间 + 分钟数）
+            const deadline = Math.floor(Date.now() / 1000) + parseInt(deadlineMinutes);
+            
+            // 构建交易路径（简化版，实际应根据需要构建）
+            // 假设使用WBNB作为中间代币
+            const WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // BSC上的WBNB地址
+            const buyPath = [buyToken, WBNB];
+            const sellPath = [sellToken, WBNB];
+            
+            // 将输入的数量转换为Wei（假设代币有18位小数）
+            const buyAmountInWei = ethers.utils.parseUnits(buyAmount, 18).toString();
+            const sellAmountInWei = ethers.utils.parseUnits(sellAmount, 18).toString();
+            
+            // 调用trader.js中的批量交易功能
+            const tx = await trader.executeBatchTrade(
+                buyPath,
+                sellPath,
+                buyAmountInWei,
+                sellAmountInWei,
+                slippage,
+                deadline
+            );
+            
+            // 添加交易记录
+            addTradeRecord(tx.transactionHash, '0.01 BNB', new Date().toLocaleString());
+            
+            showNotification('批量交易执行成功！', 'success');
+        } catch (error) {
+            console.error('执行批量交易失败:', error);
+            showNotification('执行批量交易失败: ' + error.message, 'error');
+        } finally {
+            button.textContent = '执行批量交易';
+            button.disabled = false;
         }
     }
     
-    // 处理链变化
-    function handleChainChanged(chainId) {
-        // 当链变化时，刷新页面
-        if (chainId !== '0x38') {
-            showNotification('请切换到BSC网络', 'error');
-        } else {
-            showNotification('已连接到BSC网络', 'success');
-        }
-    }
-
-    // 连接钱包后更新UI
-    function updateUIAfterConnect() {
-        // 启用授权和续期按钮
-        document.querySelectorAll('.auth-btn, .renew-btn').forEach(btn => {
-            btn.disabled = false;
-        });
-
-        // 更新统计面板
-        const statItems = document.querySelectorAll('.stat-item p');
-        statItems[0].textContent = 'WBNB/BUSD';
+    // 添加交易记录
+    function addTradeRecord(hash, fee, time) {
+        const tableBody = document.querySelector('.trade-table tbody');
+        const row = document.createElement('tr');
+        
+        // 交易哈希列
+        const hashCell = document.createElement('td');
+        const shortHash = hash.substr(0, 6) + '...' + hash.substr(-4);
+        hashCell.textContent = shortHash;
+        hashCell.title = hash; // 完整哈希显示为提示
+        row.appendChild(hashCell);
+        
+        // 费用列
+        const feeCell = document.createElement('td');
+        feeCell.textContent = fee;
+        row.appendChild(feeCell);
+        
+        // 时间列
+        const timeCell = document.createElement('td');
+        timeCell.textContent = time;
+        row.appendChild(timeCell);
+        
+        // 添加到表格顶部
+        tableBody.insertBefore(row, tableBody.firstChild);
     }
 
     // 处理授权按钮点击
@@ -208,6 +283,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showNotification('地址续期成功！', 'success');
         }, 2000);
+    }
+
+    // 连接钱包后更新UI
+    function updateUIAfterConnect(account) {
+        // 启用授权和续期按钮
+        document.querySelectorAll('.auth-btn, .renew-btn').forEach(btn => {
+            btn.disabled = false;
+        });
+
+        // 更新统计面板
+        const statItems = document.querySelectorAll('.stat-item p');
+        statItems[0].textContent = 'WBNB/BUSD';
+        
+        // 更新地址显示
+        const addressElements = document.querySelectorAll('.address-name');
+        if (addressElements.length > 1) {
+            const shortAddress = account.substr(0, 6) + '...' + account.substr(-4);
+            addressElements[1].textContent = shortAddress;
+        }
     }
 
     // 加载交易数据

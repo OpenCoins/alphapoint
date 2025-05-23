@@ -19,6 +19,7 @@
             <div class="info">
                 <p>使用此工具交易时必须取消勾选MEV保护，滑点可以调低到0.1，目前仅支持PancakeSwap的交易</p>
             </div>
+            <button class="connect-wallet-btn">连接钱包</button>
         </header>
 
         <main>
@@ -49,6 +50,19 @@
                         <span class="token-status-value">未授权</span>
                         <button class="auth-btn">授权</button>
                     </div>
+                    <!-- 添加代币授权表单 -->
+                    <div class="token-auth-form">
+                        <h3>添加代币授权</h3>
+                        <div class="form-group">
+                            <label for="token-address">代币地址</label>
+                            <input type="text" id="token-address" placeholder="输入代币合约地址">
+                        </div>
+                        <div class="form-group">
+                            <label for="token-amount">授权数量</label>
+                            <input type="text" id="token-amount" placeholder="输入授权数量">
+                        </div>
+                        <button id="approve-token-btn">授权代币</button>
+                    </div>
                 </div>
             </section>
 
@@ -64,6 +78,55 @@
                         <span class="address-status-value">已过期</span>
                         <button class="renew-btn">续期</button>
                     </div>
+                </div>
+            </section>
+
+            <!-- 添加零滑点交易功能 -->
+            <section class="zero-slippage-trade">
+                <h2>零滑点批量交易</h2>
+                <div class="trade-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="buy-token">买入代币</label>
+                            <input type="text" id="buy-token" placeholder="买入代币地址">
+                        </div>
+                        <div class="form-group">
+                            <label for="buy-amount">买入数量</label>
+                            <input type="text" id="buy-amount" placeholder="买入数量">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sell-token">卖出代币</label>
+                            <input type="text" id="sell-token" placeholder="卖出代币地址">
+                        </div>
+                        <div class="form-group">
+                            <label for="sell-amount">卖出数量</label>
+                            <input type="text" id="sell-amount" placeholder="卖出数量">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="slippage">最大滑点</label>
+                            <select id="slippage">
+                                <option value="10">0.1%</option>
+                                <option value="25">0.25%</option>
+                                <option value="50">0.5%</option>
+                                <option value="100">1%</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="deadline">交易截止时间</label>
+                            <select id="deadline">
+                                <option value="60">1分钟</option>
+                                <option value="300">5分钟</option>
+                                <option value="600">10分钟</option>
+                                <option value="1800">30分钟</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="execute-batch-trade-btn" class="primary-btn">执行批量交易</button>
+                    <p class="trade-note">注意：批量交易可以同时执行买入和卖出操作，减少价格影响，滑点控制在1%以内</p>
                 </div>
             </section>
 
@@ -96,6 +159,12 @@
         </footer>
     </div>
 
+    <!-- 添加Web3.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <!-- 添加ethers.js库 -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <!-- 添加我们的交易工具JS -->
+    <script src="assets/js/trader.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>
