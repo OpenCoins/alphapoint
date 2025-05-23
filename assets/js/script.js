@@ -115,11 +115,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // 将输入的数量转换为Wei（假设代币有18位小数）
-            const amountInWei = ethers.utils.parseUnits(tokenAmount, 18).toString();
-            
-            // 调用trader.js中的授权代币功能
-            const tx = await trader.approveToken(tokenAddress, amountInWei);
+            // 直接使用字符串形式的数量，让trader.js内部处理转换
+            // 不再使用ethers.utils.parseUnits
+            const tx = await trader.approveToken(tokenAddress, tokenAmount);
             
             // 添加到代币列表
             addTokenToList(tokenAddress, '已授权');
@@ -190,16 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const buyPath = [buyToken, WBNB];
             const sellPath = [sellToken, WBNB];
             
-            // 将输入的数量转换为Wei（假设代币有18位小数）
-            const buyAmountInWei = ethers.utils.parseUnits(buyAmount, 18).toString();
-            const sellAmountInWei = ethers.utils.parseUnits(sellAmount, 18).toString();
-            
-            // 调用trader.js中的批量交易功能
+            // 直接使用字符串形式的数量，让trader.js内部处理转换
+            // 不再使用ethers.utils.parseUnits
             const tx = await trader.executeBatchTrade(
                 buyPath,
                 sellPath,
-                buyAmountInWei,
-                sellAmountInWei,
+                buyAmount,
+                sellAmount,
                 slippage,
                 deadline
             );

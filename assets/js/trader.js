@@ -202,28 +202,39 @@ class ZeroSlippageTrader {
                 console.warn('无法获取代币精度，使用默认值18:', error);
             }
             
-            // 如果amount是字符串且不包含科学计数法，则转换为BigNumber
-            let amountToApprove = amount;
+            // 处理输入的数量，转换为Wei单位
+            let amountToApprove;
+            
+            // 如果amount是字符串且不包含科学计数法，则转换为Wei单位
             if (typeof amount === 'string' && !amount.includes('e')) {
                 // 检查是否已经是Wei单位
                 if (!amount.includes('.')) {
                     amountToApprove = amount;
                 } else {
-                    // 转换为Wei单位
-                    const parts = amount.split('.');
-                    const wholePart = parts[0];
-                    let fractionalPart = parts[1] || '';
-                    
-                    // 补齐小数部分
-                    while (fractionalPart.length < decimals) {
-                        fractionalPart += '0';
+                    // 使用Web3.js的工具函数转换为Wei单位
+                    try {
+                        amountToApprove = this.web3.utils.toWei(amount, 'ether');
+                    } catch (error) {
+                        console.error('转换数量到Wei单位失败:', error);
+                        // 手动转换为Wei单位
+                        const parts = amount.split('.');
+                        const wholePart = parts[0];
+                        let fractionalPart = parts[1] || '';
+                        
+                        // 补齐小数部分
+                        while (fractionalPart.length < decimals) {
+                            fractionalPart += '0';
+                        }
+                        
+                        // 截断超出精度的部分
+                        fractionalPart = fractionalPart.substring(0, decimals);
+                        
+                        amountToApprove = wholePart + fractionalPart;
                     }
-                    
-                    // 截断超出精度的部分
-                    fractionalPart = fractionalPart.substring(0, decimals);
-                    
-                    amountToApprove = wholePart + fractionalPart;
                 }
+            } else {
+                // 如果是数字或其他格式，尝试转换为字符串
+                amountToApprove = amount.toString();
             }
             
             // 授权最大数量（无限授权）
@@ -275,26 +286,52 @@ class ZeroSlippageTrader {
             const buyTokenAddress = buyPath[0];
             const sellTokenAddress = sellPath[0];
             
+            // 处理买入数量，转换为Wei单位
+            let buyAmountInWei;
+            try {
+                if (typeof buyAmountIn === 'string' && buyAmountIn.includes('.')) {
+                    buyAmountInWei = this.web3.utils.toWei(buyAmountIn, 'ether');
+                } else {
+                    buyAmountInWei = buyAmountIn.toString();
+                }
+            } catch (error) {
+                console.error('转换买入数量到Wei单位失败:', error);
+                buyAmountInWei = buyAmountIn.toString();
+            }
+            
+            // 处理卖出数量，转换为Wei单位
+            let sellAmountInWei;
+            try {
+                if (typeof sellAmountIn === 'string' && sellAmountIn.includes('.')) {
+                    sellAmountInWei = this.web3.utils.toWei(sellAmountIn, 'ether');
+                } else {
+                    sellAmountInWei = sellAmountIn.toString();
+                }
+            } catch (error) {
+                console.error('转换卖出数量到Wei单位失败:', error);
+                sellAmountInWei = sellAmountIn.toString();
+            }
+            
             // 检查买入代币授权
             const buyTokenAllowance = await this.checkTokenAllowance(buyTokenAddress, this.account);
-            if (buyTokenAllowance < buyAmountIn) {
+            if (buyTokenAllowance < buyAmountInWei) {
                 // 如果授权不足，则授权代币
-                await this.approveToken(buyTokenAddress, buyAmountIn);
+                await this.approveToken(buyTokenAddress, buyAmountInWei);
             }
             
             // 检查卖出代币授权
             const sellTokenAllowance = await this.checkTokenAllowance(sellTokenAddress, this.account);
-            if (sellTokenAllowance < sellAmountIn) {
+            if (sellTokenAllowance < sellAmountInWei) {
                 // 如果授权不足，则授权代币
-                await this.approveToken(sellTokenAddress, sellAmountIn);
+                await this.approveToken(sellTokenAddress, sellAmountInWei);
             }
             
             // 执行批量交易
             const tx = await this.contract.methods.executeBatchTrade(
                 buyPath, 
                 sellPath, 
-                buyAmountIn, 
-                sellAmountIn, 
+                buyAmountInWei, 
+                sellAmountInWei, 
                 maxSlippagePercent, 
                 deadline
             ).send({ from: this.account });
