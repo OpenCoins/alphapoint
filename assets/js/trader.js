@@ -232,8 +232,22 @@ class ZeroSlippageTrader {
                         amountToApprove = wholePart + fractionalPart;
                     }
                 }
+            } else if (typeof amount === 'number') {
+                // 如果是数字，先转换为字符串
+                const amountStr = amount.toString();
+                try {
+                    // 如果包含小数点，使用toWei转换
+                    if (amountStr.includes('.')) {
+                        amountToApprove = this.web3.utils.toWei(amountStr, 'ether');
+                    } else {
+                        amountToApprove = amountStr;
+                    }
+                } catch (error) {
+                    console.error('转换数字到Wei单位失败:', error);
+                    amountToApprove = amountStr;
+                }
             } else {
-                // 如果是数字或其他格式，尝试转换为字符串
+                // 其他格式，尝试转换为字符串
                 amountToApprove = amount.toString();
             }
             
@@ -291,6 +305,13 @@ class ZeroSlippageTrader {
             try {
                 if (typeof buyAmountIn === 'string' && buyAmountIn.includes('.')) {
                     buyAmountInWei = this.web3.utils.toWei(buyAmountIn, 'ether');
+                } else if (typeof buyAmountIn === 'number') {
+                    const buyAmountStr = buyAmountIn.toString();
+                    if (buyAmountStr.includes('.')) {
+                        buyAmountInWei = this.web3.utils.toWei(buyAmountStr, 'ether');
+                    } else {
+                        buyAmountInWei = buyAmountStr;
+                    }
                 } else {
                     buyAmountInWei = buyAmountIn.toString();
                 }
@@ -304,6 +325,13 @@ class ZeroSlippageTrader {
             try {
                 if (typeof sellAmountIn === 'string' && sellAmountIn.includes('.')) {
                     sellAmountInWei = this.web3.utils.toWei(sellAmountIn, 'ether');
+                } else if (typeof sellAmountIn === 'number') {
+                    const sellAmountStr = sellAmountIn.toString();
+                    if (sellAmountStr.includes('.')) {
+                        sellAmountInWei = this.web3.utils.toWei(sellAmountStr, 'ether');
+                    } else {
+                        sellAmountInWei = sellAmountStr;
+                    }
                 } else {
                     sellAmountInWei = sellAmountIn.toString();
                 }
